@@ -1,0 +1,100 @@
+// 中文说明：AgentSwarm 节点入口与调度，负责订阅/发布、定时器与状态机驱动
+#pragma once
+
+#include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <memory>
+#include <ros/ros.h>
+#include <string>
+#include <sunray_msgs/Formation.h>
+#include <sunray_msgs/FormationOffsets.h>
+#include <sunray_msgs/UAVSetup.h>
+#include <sunray_msgs/UAVState.h>
+
+#include "agent_state_cache.h"
+#include "control_command_mapper.h"
+#include "formation_policies.h"
+#include "formation_policy_factory.h"
+#include "formation_state_machine.h"
+#include "goal_dispatcher.h"
+#include "leader_tracker.h"
+#include "orca_client.h"
+
+namespace agent_swarm
+{
+
+// AgentSwarm 入口节点
+class AgentSwarmNode
+{
+  public:
+    explicit AgentSwarmNode(ros::NodeHandle &nh);
+
+  private:
+    // 指令回调
+    void onFormationCmd(const sunray_msgs::Formation::ConstPtr &msg);
+    // 目标点定时生成
+    void goalTimerCb(const ros::TimerEvent &event);
+    // 控制定时发布
+    void controlTimerCb(const ros::TimerEvent &event);
+    // 状态定时发布到 ORCA
+    void statePublishTimerCb(const ros::TimerEvent &event);
+    // 自动起飞流程
+    void handleTakeoff();
+    // 自身 UAV 状态回调
+    void uavStateCb(const sunray_msgs::UAVState::ConstPtr &msg);
+    // Leader 目标点回调
+    void leaderGoalCb(const geometry_msgs::PoseStamped::ConstPtr &msg);
+    // 自定义阵型偏移量回调
+    void formationOffsetsCb(const sunray_msgs::FormationOffsets::ConstPtr &msg);
+
+    ros::NodeHandle nh_;
+
+    int agent_id_{1};
+    int agent_num_{1};
+    int agent_type_{0};
+    int leader_id_{1};
+    std::string agent_name_{"uav"};
+    std::string policy_name_{"ring"};
+    double spacing_{1.0};
+    bool use_fixed_altitude_{true};
+    double fixed_altitude_{1.0};
+    double spacing_min_{0.3};
+    double spacing_max_{5.0};
+    double spacing_scale_up_{1.2};
+    double spacing_scale_down_{0.8};
+    double leader_timeout_{1.0};
+    double orca_timeout_{1.0};
+    bool leader_publish_goal_{false};
+
+    FormationStateMachine state_machine_{};
+    LeaderTracker leader_tracker_{};
+    FormationPolicyFactory policy_factory_{};
+    std::shared_ptr<FormationPolicy> policy_{};
+    std::shared_ptr<CustomPolicy> custom_policy_{};
+    AgentStateCache state_cache_{};
+    GoalDispatcher goal_dispatcher_{};
+    OrcaClient orca_client_{};
+    ControlCommandMapper control_mapper_{};
+
+    ros::Subscriber formation_cmd_sub_{};
+    ros::Subscriber formation_cmd_ground_sub_{};
+    ros::Subscriber formation_offsets_sub_{};
+    ros::Subscriber uav_state_sub_{};
+    ros::Subscriber leader_goal_sub_{};
+    ros::Publisher uav_setup_pub_{};
+    ros::Timer goal_timer_{};
+    ros::Timer control_timer_{};
+    ros::Timer state_pub_timer_{};
+
+    sunray_msgs::UAVState uav_state_{};
+    bool uav_state_ready_{false};
+    bool takeoff_active_{false};
+    ros::Time takeoff_start_time_{};
+    bool formation_change_active_{false};
+    bool leader_goal_active_{false};
+    geometry_msgs::Pose leader_goal_{};
+    geometry_msgs::Pose last_goal_{};
+    bool last_goal_valid_{false};
+};
+
+} // namespace agent_swarm
