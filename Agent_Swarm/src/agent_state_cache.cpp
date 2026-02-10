@@ -5,29 +5,48 @@
 namespace agent_swarm
 {
 
-void AgentStateCache::init(ros::NodeHandle &nh, int agent_num, int agent_type, const std::string &agent_name)
+void AgentStateCache::init(ros::NodeHandle &nh, int agent_num, int agent_type, const std::string &agent_name,
+                           int leader_id)
 {
     agent_num_ = agent_num;
     agent_type_ = agent_type;
     agent_name_ = agent_name;
+    leader_id_ = leader_id;
+
+    int leader_index = (leader_id > 100) ? (leader_id - 100) : leader_id;
+    bool leader_is_ugv = (leader_id > 100);
 
     for (int i = 0; i < agent_num_; ++i)
     {
         int id = i + 1;
-        std::string prefix = "/" + agent_name_ + std::to_string(id);
-        if (agent_type_ == 0)
+        // ORCA agent_state 始终使用 agent_name 前缀
+        std::string orca_prefix = "/" + agent_name_ + std::to_string(id);
+        pubs_[id] = nh.advertise<nav_msgs::Odometry>(orca_prefix + "/orca/agent_state", 10);
+
+        if (leader_is_ugv && id == leader_index)
         {
-            std::string topic = prefix + "/sunray/uav_state";
-            subs_[id] = nh.subscribe<sunray_msgs::UAVState>(topic, 10,
-                                                            boost::bind(&AgentStateCache::uavCallback, this, _1, id));
+            // UGV Leader：硬编码 /ugv 前缀（与 LeaderTracker 一致）
+            std::string ugv_prefix = "/ugv" + std::to_string(id);
+            std::string topic = ugv_prefix + "/sunray_ugv/ugv_state";
+            subs_[id] = nh.subscribe<sunray_msgs::UGVState>(
+                topic, 10, boost::bind(&AgentStateCache::ugvCallback, this, _1, id));
         }
         else
         {
-            std::string topic = prefix + "/sunray_ugv/ugv_state";
-            subs_[id] = nh.subscribe<sunray_msgs::UGVState>(topic, 10,
-                                                            boost::bind(&AgentStateCache::ugvCallback, this, _1, id));
+            std::string prefix = "/" + agent_name_ + std::to_string(id);
+            if (agent_type_ == 0)
+            {
+                std::string topic = prefix + "/sunray/uav_state";
+                subs_[id] = nh.subscribe<sunray_msgs::UAVState>(
+                    topic, 10, boost::bind(&AgentStateCache::uavCallback, this, _1, id));
+            }
+            else
+            {
+                std::string topic = prefix + "/sunray_ugv/ugv_state";
+                subs_[id] = nh.subscribe<sunray_msgs::UGVState>(
+                    topic, 10, boost::bind(&AgentStateCache::ugvCallback, this, _1, id));
+            }
         }
-        pubs_[id] = nh.advertise<nav_msgs::Odometry>(prefix + "/orca/agent_state", 10);
     }
 }
 

@@ -64,7 +64,8 @@ class AgentSwarmNode
     double spacing_scale_down_{0.8};
     double leader_timeout_{1.0};
     double orca_timeout_{1.0};
-    bool leader_publish_goal_{false};
+    double goal_z_tolerance_{0.2};
+    bool leader_publish_goal_{true};
 
     FormationStateMachine state_machine_{};
     LeaderTracker leader_tracker_{};
@@ -92,9 +93,15 @@ class AgentSwarmNode
     ros::Time takeoff_start_time_{};
     bool formation_change_active_{false};
     bool leader_goal_active_{false};
+    bool return_home_active_{false};
+    bool home_set_{false};
+    geometry_msgs::Pose home_pose_{};
     geometry_msgs::Pose leader_goal_{};
     geometry_msgs::Pose last_goal_{};
     bool last_goal_valid_{false};
+    SwarmState last_effective_state_{SwarmState::INIT};
+    bool last_effective_state_valid_{false};
+    int last_takeoff_phase_{-1};
 };
 
 } // namespace agent_swarm

@@ -14,8 +14,8 @@ namespace agent_swarm
 class AgentStateCache
 {
   public:
-    // 初始化订阅与发布
-    void init(ros::NodeHandle &nh, int agent_num, int agent_type, const std::string &agent_name);
+    // 初始化订阅与发布（leader_id 用于混合编队：leader_id>100 表示 UGV Leader）
+    void init(ros::NodeHandle &nh, int agent_num, int agent_type, const std::string &agent_name, int leader_id = 1);
     // 获取当前缓存
     const std::map<int, nav_msgs::Odometry> &states() const
     {
@@ -32,9 +32,11 @@ class AgentStateCache
 
     int agent_num_{1};
     int agent_type_{0};
+    int leader_id_{1};
     std::string agent_name_{"uav"};
     std::map<int, nav_msgs::Odometry> agent_state_{};
     std::map<int, ros::Subscriber> subs_{};
+    std::map<int, ros::Subscriber> ugv_leader_sub_{}; // UGV leader 额外订阅
     std::map<int, ros::Publisher> pubs_{};
 };
 

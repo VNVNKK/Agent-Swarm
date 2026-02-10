@@ -1,6 +1,7 @@
 // 中文说明：键盘控制节点，发布编队/动作/移动指令
 #include <geometry_msgs/PoseStamped.h>
 #include <iostream>
+#include <limits>
 #include <ros/ros.h>
 #include <signal.h>
 #include <sunray_msgs/Formation.h>
@@ -52,6 +53,14 @@ int main(int argc, char **argv)
 
         int cmd = 0;
         cin >> cmd;
+
+        if (!cin)
+        {
+            cin.clear();
+            cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            cout << "输入无效，请输入整数指令" << endl;
+            continue;
+        }
 
         switch (cmd)
         {

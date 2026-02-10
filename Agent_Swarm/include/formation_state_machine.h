@@ -14,7 +14,7 @@ enum class SwarmState
     LAND = 2,
     HOVER = 3,
     FORMATION = 4,
-    RETURN_HOME = 5
+    ORCA_RETURN_HOME = 5
 };
 
 // 编队状态机
@@ -35,7 +35,7 @@ class FormationStateMachine
     void setRequestedState(SwarmState state);
 
   private:
-    SwarmState requested_state_{SwarmState::FORMATION};
+    SwarmState requested_state_{SwarmState::INIT};
 };
 
 } // namespace agent_swarm

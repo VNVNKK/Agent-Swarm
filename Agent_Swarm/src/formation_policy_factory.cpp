@@ -7,7 +7,7 @@ namespace agent_swarm
 
 std::shared_ptr<FormationPolicy> FormationPolicyFactory::create(const std::string &name) const
 {
-    if (name == "ring" || name == "expand" || name == "contract" || name == "gather" || name == "spread")
+    if (name == "ring")
     {
         return std::make_shared<RingPolicy>();
     }

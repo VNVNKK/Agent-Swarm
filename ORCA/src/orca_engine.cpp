@@ -70,11 +70,21 @@ void OrcaEngine::handleSetup(int idx, const sunray_msgs::OrcaSetup &msg)
             goal_pos_[1] = msg.desired_pos[1];
             goal_pos_[2] = msg.desired_pos[2];
             goal_yaw_ = msg.desired_yaw;
-            goal_reached_printed_ = false;
-            arrived_goal_ = false;
             start_flag_ = true;
-            orca_state_ =
-                (msg.cmd == sunray_msgs::OrcaSetup::GOAL_RUN) ? sunray_msgs::OrcaCmd::RUN : sunray_msgs::OrcaCmd::INIT;
+
+            // 防抖：如果当前位置已在新目标的到达半径内，保持 ARRIVED，不重置
+            // 否则正常切 RUN 去追新目标
+            if (arrived_goal_ && reachedGoal(idx))
+            {
+                // 已到位且新目标在到达范围内，不重置
+            }
+            else
+            {
+                arrived_goal_ = false;
+                goal_reached_printed_ = false;
+                orca_state_ =
+                    (msg.cmd == sunray_msgs::OrcaSetup::GOAL_RUN) ? sunray_msgs::OrcaCmd::RUN : sunray_msgs::OrcaCmd::INIT;
+            }
         }
     }
     else if (msg.cmd == sunray_msgs::OrcaSetup::STOP)
@@ -138,13 +148,25 @@ bool OrcaEngine::step(sunray_msgs::OrcaCmd &out)
 
     for (int i = 0; i < agent_num_; ++i)
     {
-        RVO::Vector2 pos(agent_state_[i].pose.pose.position.x, agent_state_[i].pose.pose.position.y);
-        RVO::Vector2 vel(agent_state_[i].twist.twist.linear.x, agent_state_[i].twist.twist.linear.y);
-        sim_->setAgentPosition(i, pos);
-        sim_->setAgentVelocity(i, vel);
+        if (odom_valid_[i])
+        {
+            RVO::Vector2 pos(agent_state_[i].pose.pose.position.x, agent_state_[i].pose.pose.position.y);
+            RVO::Vector2 vel(agent_state_[i].twist.twist.linear.x, agent_state_[i].twist.twist.linear.y);
+            sim_->setAgentPosition(i, pos);
+            sim_->setAgentVelocity(i, vel);
+        }
+        else
+        {
+            // 过期 agent 移到远处，避免幽灵位置影响避障决策
+            sim_->setAgentPosition(i, RVO::Vector2(1e4f, 1e4f));
+            sim_->setAgentVelocity(i, RVO::Vector2(0.0f, 0.0f));
+        }
     }
 
-    if (orca_state_ == sunray_msgs::OrcaCmd::ARRIVED || orca_state_ == sunray_msgs::OrcaCmd::STOP)
+    // 始终运行 ORCA 计算，确保障碍物/围栏避障在任何状态下都生效
+    sim_->computeVel();
+
+    if (orca_state_ == sunray_msgs::OrcaCmd::STOP)
     {
         out.linear[0] = 0.0f;
         out.linear[1] = 0.0f;
@@ -152,18 +174,18 @@ bool OrcaEngine::step(sunray_msgs::OrcaCmd &out)
         return true;
     }
 
-    sim_->computeVel();
-
-    if (arrived_goal_)
+    if (arrived_goal_ || orca_state_ == sunray_msgs::OrcaCmd::ARRIVED)
     {
-        if (!goal_reached_printed_)
+        if (!goal_reached_printed_ && arrived_goal_)
         {
             goal_reached_printed_ = true;
         }
         orca_state_ = sunray_msgs::OrcaCmd::ARRIVED;
         out.state = orca_state_;
-        out.linear[0] = 0.0f;
-        out.linear[1] = 0.0f;
+        // ARRIVED 时仍输出 ORCA 避障速度（正常到位时接近 0，靠近围栏时产生排斥）
+        RVO::Vector2 vel = sim_->getAgentVelCMD(idx);
+        out.linear[0] = vel.x();
+        out.linear[1] = vel.y();
         out.angular[2] = 0.0f;
         return true;
     }

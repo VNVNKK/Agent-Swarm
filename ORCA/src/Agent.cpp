@@ -476,8 +476,10 @@ void Agent::insertObstacleNeighbor(const Obstacle *obstacle, float rangeSq)
 
 void Agent::update()
 {
-    velocity_ = newVelocity_;
-    // 剥离模型状态更新
+    // velocity_ 赋值在当前架构中是冗余操作：
+    // OrcaEngine::step() 每步都从 odom 覆写 velocity_，
+    // 且输出读取 newVelocity_ 而非 velocity_。
+    // velocity_ = newVelocity_;
     // position_ += velocity_ * sim_->timeStep_;
 }
 

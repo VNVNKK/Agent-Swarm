@@ -41,7 +41,7 @@ void ControlCommandMapper::publishHover()
     }
 }
 
-void ControlCommandMapper::publishTakeoff()
+void ControlCommandMapper::publishTakeoff(double altitude)
 {
     if (agent_type_ != 0)
     {
@@ -51,6 +51,7 @@ void ControlCommandMapper::publishTakeoff()
     sunray_msgs::UAVControlCMD cmd;
     cmd.header.stamp = ros::Time::now();
     cmd.cmd = sunray_msgs::UAVControlCMD::Takeoff;
+    cmd.desired_pos[2] = altitude;
     uav_pub_.publish(cmd);
 }
 
@@ -64,19 +65,6 @@ void ControlCommandMapper::publishLand()
     sunray_msgs::UAVControlCMD cmd;
     cmd.header.stamp = ros::Time::now();
     cmd.cmd = sunray_msgs::UAVControlCMD::Land;
-    uav_pub_.publish(cmd);
-}
-
-void ControlCommandMapper::publishReturnHome()
-{
-    if (agent_type_ != 0)
-    {
-        publishUgvHold();
-        return;
-    }
-    sunray_msgs::UAVControlCMD cmd;
-    cmd.header.stamp = ros::Time::now();
-    cmd.cmd = sunray_msgs::UAVControlCMD::Return;
     uav_pub_.publish(cmd);
 }
 

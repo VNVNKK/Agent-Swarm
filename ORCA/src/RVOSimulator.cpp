@@ -71,7 +71,7 @@ size_t RVOSimulator::addAgent(const Vector2 &position)
     agent->timeHorizonObst_ = defaultAgent_->timeHorizonObst_;
     agent->velocity_ = defaultAgent_->velocity_;
 
-    agent->id_ = agents_.size(); // 从1开始
+    agent->id_ = agents_.size(); // 0-based 索引
 
     agents_.push_back(agent);
 

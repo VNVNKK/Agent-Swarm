@@ -10,18 +10,26 @@
   <arg name="agent_name" default="uav"/>
   <arg name="formation_policy" default="ring"/>
   <arg name="spacing" default="2.5"/>
+  <arg name="spacing_min" default="0.3"/>
+  <arg name="spacing_max" default="5.0"/>
+  <arg name="spacing_scale_up" default="1.2"/>
+  <arg name="spacing_scale_down" default="0.8"/>
+  <arg name="use_fixed_altitude" default="true"/>
+  <arg name="fixed_altitude" default="1.0"/>
+  <arg name="goal_z_tolerance" default="0.2"/>
+  <arg name="leader_publish_goal" default="true"/>
 
   <arg name="neighborDist" default="1.5"/>
   <arg name="timeHorizon" default="2.0"/>
   <arg name="timeHorizonObst" default="2.0"/>
   <arg name="radius" default="0.3"/>
-  <arg name="maxSpeed" default="0.5"/>
+  <arg name="maxSpeed" default="2.0"/>
   <arg name="time_step" default="0.1"/>
 
-  <arg name="geo_min_x" default="-5.0"/>
-  <arg name="geo_max_x" default="5.0"/>
-  <arg name="geo_min_y" default="-5.0"/>
-  <arg name="geo_max_y" default="5.0"/>
+  <arg name="geo_min_x" default="-20.0"/>
+  <arg name="geo_max_x" default="20.0"/>
+  <arg name="geo_min_y" default="-20.0"/>
+  <arg name="geo_max_y" default="20.0"/>
 
   <!-- Expose agent_num globally so formation_tui can read it -->
   <param name="agent_num" value="$(arg agent_num)"/>
@@ -36,6 +44,14 @@
       <arg name="agent_name" value="$(arg agent_name)"/>
       <arg name="formation_policy" value="$(arg formation_policy)"/>
       <arg name="spacing" value="$(arg spacing)"/>
+      <arg name="spacing_min" value="$(arg spacing_min)"/>
+      <arg name="spacing_max" value="$(arg spacing_max)"/>
+      <arg name="spacing_scale_up" value="$(arg spacing_scale_up)"/>
+      <arg name="spacing_scale_down" value="$(arg spacing_scale_down)"/>
+      <arg name="use_fixed_altitude" value="$(arg use_fixed_altitude)"/>
+      <arg name="fixed_altitude" value="$(arg fixed_altitude)"/>
+      <arg name="goal_z_tolerance" value="$(arg goal_z_tolerance)"/>
+      <arg name="leader_publish_goal" value="$(arg leader_publish_goal)"/>
       <arg name="node_name" value="agent_swarm_node_1"/>
     </include>
     <include file="$(find sunray_swarm)/ORCA/launch/orca.launch">
@@ -66,6 +82,14 @@
       <arg name="agent_name" value="$(arg agent_name)"/>
       <arg name="formation_policy" value="$(arg formation_policy)"/>
       <arg name="spacing" value="$(arg spacing)"/>
+      <arg name="spacing_min" value="$(arg spacing_min)"/>
+      <arg name="spacing_max" value="$(arg spacing_max)"/>
+      <arg name="spacing_scale_up" value="$(arg spacing_scale_up)"/>
+      <arg name="spacing_scale_down" value="$(arg spacing_scale_down)"/>
+      <arg name="use_fixed_altitude" value="$(arg use_fixed_altitude)"/>
+      <arg name="fixed_altitude" value="$(arg fixed_altitude)"/>
+      <arg name="goal_z_tolerance" value="$(arg goal_z_tolerance)"/>
+      <arg name="leader_publish_goal" value="$(arg leader_publish_goal)"/>
       <arg name="node_name" value="agent_swarm_node_2"/>
     </include>
     <include file="$(find sunray_swarm)/ORCA/launch/orca.launch">
@@ -96,6 +120,14 @@
       <arg name="agent_name" value="$(arg agent_name)"/>
       <arg name="formation_policy" value="$(arg formation_policy)"/>
       <arg name="spacing" value="$(arg spacing)"/>
+      <arg name="spacing_min" value="$(arg spacing_min)"/>
+      <arg name="spacing_max" value="$(arg spacing_max)"/>
+      <arg name="spacing_scale_up" value="$(arg spacing_scale_up)"/>
+      <arg name="spacing_scale_down" value="$(arg spacing_scale_down)"/>
+      <arg name="use_fixed_altitude" value="$(arg use_fixed_altitude)"/>
+      <arg name="fixed_altitude" value="$(arg fixed_altitude)"/>
+      <arg name="goal_z_tolerance" value="$(arg goal_z_tolerance)"/>
+      <arg name="leader_publish_goal" value="$(arg leader_publish_goal)"/>
       <arg name="node_name" value="agent_swarm_node_3"/>
     </include>
     <include file="$(find sunray_swarm)/ORCA/launch/orca.launch">
@@ -126,6 +158,14 @@
       <arg name="agent_name" value="$(arg agent_name)"/>
       <arg name="formation_policy" value="$(arg formation_policy)"/>
       <arg name="spacing" value="$(arg spacing)"/>
+      <arg name="spacing_min" value="$(arg spacing_min)"/>
+      <arg name="spacing_max" value="$(arg spacing_max)"/>
+      <arg name="spacing_scale_up" value="$(arg spacing_scale_up)"/>
+      <arg name="spacing_scale_down" value="$(arg spacing_scale_down)"/>
+      <arg name="use_fixed_altitude" value="$(arg use_fixed_altitude)"/>
+      <arg name="fixed_altitude" value="$(arg fixed_altitude)"/>
+      <arg name="goal_z_tolerance" value="$(arg goal_z_tolerance)"/>
+      <arg name="leader_publish_goal" value="$(arg leader_publish_goal)"/>
       <arg name="node_name" value="agent_swarm_node_4"/>
     </include>
     <include file="$(find sunray_swarm)/ORCA/launch/orca.launch">
@@ -156,6 +196,14 @@
       <arg name="agent_name" value="$(arg agent_name)"/>
       <arg name="formation_policy" value="$(arg formation_policy)"/>
       <arg name="spacing" value="$(arg spacing)"/>
+      <arg name="spacing_min" value="$(arg spacing_min)"/>
+      <arg name="spacing_max" value="$(arg spacing_max)"/>
+      <arg name="spacing_scale_up" value="$(arg spacing_scale_up)"/>
+      <arg name="spacing_scale_down" value="$(arg spacing_scale_down)"/>
+      <arg name="use_fixed_altitude" value="$(arg use_fixed_altitude)"/>
+      <arg name="fixed_altitude" value="$(arg fixed_altitude)"/>
+      <arg name="goal_z_tolerance" value="$(arg goal_z_tolerance)"/>
+      <arg name="leader_publish_goal" value="$(arg leader_publish_goal)"/>
       <arg name="node_name" value="agent_swarm_node_5"/>
     </include>
     <include file="$(find sunray_swarm)/ORCA/launch/orca.launch">
@@ -186,6 +234,14 @@
       <arg name="agent_name" value="$(arg agent_name)"/>
       <arg name="formation_policy" value="$(arg formation_policy)"/>
       <arg name="spacing" value="$(arg spacing)"/>
+      <arg name="spacing_min" value="$(arg spacing_min)"/>
+      <arg name="spacing_max" value="$(arg spacing_max)"/>
+      <arg name="spacing_scale_up" value="$(arg spacing_scale_up)"/>
+      <arg name="spacing_scale_down" value="$(arg spacing_scale_down)"/>
+      <arg name="use_fixed_altitude" value="$(arg use_fixed_altitude)"/>
+      <arg name="fixed_altitude" value="$(arg fixed_altitude)"/>
+      <arg name="goal_z_tolerance" value="$(arg goal_z_tolerance)"/>
+      <arg name="leader_publish_goal" value="$(arg leader_publish_goal)"/>
       <arg name="node_name" value="agent_swarm_node_6"/>
     </include>
     <include file="$(find sunray_swarm)/ORCA/launch/orca.launch">

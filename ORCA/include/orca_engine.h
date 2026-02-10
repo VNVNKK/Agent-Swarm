@@ -62,7 +62,7 @@ class OrcaEngine
 
     int agent_id_{1};
     int agent_num_{1};
-    int orca_state_{sunray_msgs::OrcaCmd::INIT};
+    uint8_t orca_state_{sunray_msgs::OrcaCmd::INIT};
     bool start_flag_{false};
     bool goal_reached_printed_{false};
     bool arrived_goal_{false};
