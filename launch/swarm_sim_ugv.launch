@@ -5,9 +5,9 @@
   <!-- 注意：agent_num 超过 6 需要手动扩展本文件 -->
 
   <arg name="agent_num" default="1"/>
-  <arg name="agent_type" default="0"/>
+  <arg name="agent_type" default="1"/>
   <arg name="leader_id" default="1"/>
-  <arg name="agent_name" default="uav"/>
+  <arg name="agent_name" default="ugv"/>
   <arg name="formation_policy" default="ring"/>
   <arg name="spacing" default="2.5"/>
   <arg name="spacing_min" default="0.3"/>
@@ -52,13 +52,13 @@
       <arg name="fixed_altitude" value="$(arg fixed_altitude)"/>
       <arg name="goal_z_tolerance" value="$(arg goal_z_tolerance)"/>
       <arg name="leader_publish_goal" value="$(arg leader_publish_goal)"/>
-      <arg name="node_name" value="agent_swarm_node_1"/>
+      <arg name="node_name" value="agent_swarm_node_ugv_1"/>
     </include>
     <include file="$(find sunray_swarm)/ORCA/launch/orca.launch">
       <arg name="agent_id" value="1"/>
       <arg name="agent_num" value="$(arg agent_num)"/>
       <arg name="agent_name" value="$(arg agent_name)"/>
-      <arg name="node_name" value="orca_node_1"/>
+      <arg name="node_name" value="orca_node_ugv_1"/>
       <arg name="neighborDist" value="$(arg neighborDist)"/>
       <arg name="timeHorizon" value="$(arg timeHorizon)"/>
       <arg name="timeHorizonObst" value="$(arg timeHorizonObst)"/>
@@ -90,13 +90,13 @@
       <arg name="fixed_altitude" value="$(arg fixed_altitude)"/>
       <arg name="goal_z_tolerance" value="$(arg goal_z_tolerance)"/>
       <arg name="leader_publish_goal" value="$(arg leader_publish_goal)"/>
-      <arg name="node_name" value="agent_swarm_node_2"/>
+      <arg name="node_name" value="agent_swarm_node_ugv_2"/>
     </include>
     <include file="$(find sunray_swarm)/ORCA/launch/orca.launch">
       <arg name="agent_id" value="2"/>
       <arg name="agent_num" value="$(arg agent_num)"/>
       <arg name="agent_name" value="$(arg agent_name)"/>
-      <arg name="node_name" value="orca_node_2"/>
+      <arg name="node_name" value="orca_node_ugv_2"/>
       <arg name="neighborDist" value="$(arg neighborDist)"/>
       <arg name="timeHorizon" value="$(arg timeHorizon)"/>
       <arg name="timeHorizonObst" value="$(arg timeHorizonObst)"/>
@@ -128,13 +128,13 @@
       <arg name="fixed_altitude" value="$(arg fixed_altitude)"/>
       <arg name="goal_z_tolerance" value="$(arg goal_z_tolerance)"/>
       <arg name="leader_publish_goal" value="$(arg leader_publish_goal)"/>
-      <arg name="node_name" value="agent_swarm_node_3"/>
+      <arg name="node_name" value="agent_swarm_node_ugv_3"/>
     </include>
     <include file="$(find sunray_swarm)/ORCA/launch/orca.launch">
       <arg name="agent_id" value="3"/>
       <arg name="agent_num" value="$(arg agent_num)"/>
       <arg name="agent_name" value="$(arg agent_name)"/>
-      <arg name="node_name" value="orca_node_3"/>
+      <arg name="node_name" value="orca_node_ugv_3"/>
       <arg name="neighborDist" value="$(arg neighborDist)"/>
       <arg name="timeHorizon" value="$(arg timeHorizon)"/>
       <arg name="timeHorizonObst" value="$(arg timeHorizonObst)"/>
@@ -166,13 +166,13 @@
       <arg name="fixed_altitude" value="$(arg fixed_altitude)"/>
       <arg name="goal_z_tolerance" value="$(arg goal_z_tolerance)"/>
       <arg name="leader_publish_goal" value="$(arg leader_publish_goal)"/>
-      <arg name="node_name" value="agent_swarm_node_4"/>
+      <arg name="node_name" value="agent_swarm_node_ugv_4"/>
     </include>
     <include file="$(find sunray_swarm)/ORCA/launch/orca.launch">
       <arg name="agent_id" value="4"/>
       <arg name="agent_num" value="$(arg agent_num)"/>
       <arg name="agent_name" value="$(arg agent_name)"/>
-      <arg name="node_name" value="orca_node_4"/>
+      <arg name="node_name" value="orca_node_ugv_4"/>
       <arg name="neighborDist" value="$(arg neighborDist)"/>
       <arg name="timeHorizon" value="$(arg timeHorizon)"/>
       <arg name="timeHorizonObst" value="$(arg timeHorizonObst)"/>
@@ -204,13 +204,13 @@
       <arg name="fixed_altitude" value="$(arg fixed_altitude)"/>
       <arg name="goal_z_tolerance" value="$(arg goal_z_tolerance)"/>
       <arg name="leader_publish_goal" value="$(arg leader_publish_goal)"/>
-      <arg name="node_name" value="agent_swarm_node_5"/>
+      <arg name="node_name" value="agent_swarm_node_ugv_5"/>
     </include>
     <include file="$(find sunray_swarm)/ORCA/launch/orca.launch">
       <arg name="agent_id" value="5"/>
       <arg name="agent_num" value="$(arg agent_num)"/>
       <arg name="agent_name" value="$(arg agent_name)"/>
-      <arg name="node_name" value="orca_node_5"/>
+      <arg name="node_name" value="orca_node_ugv_5"/>
       <arg name="neighborDist" value="$(arg neighborDist)"/>
       <arg name="timeHorizon" value="$(arg timeHorizon)"/>
       <arg name="timeHorizonObst" value="$(arg timeHorizonObst)"/>
@@ -242,13 +242,13 @@
       <arg name="fixed_altitude" value="$(arg fixed_altitude)"/>
       <arg name="goal_z_tolerance" value="$(arg goal_z_tolerance)"/>
       <arg name="leader_publish_goal" value="$(arg leader_publish_goal)"/>
-      <arg name="node_name" value="agent_swarm_node_6"/>
+      <arg name="node_name" value="agent_swarm_node_ugv_6"/>
     </include>
     <include file="$(find sunray_swarm)/ORCA/launch/orca.launch">
       <arg name="agent_id" value="6"/>
       <arg name="agent_num" value="$(arg agent_num)"/>
       <arg name="agent_name" value="$(arg agent_name)"/>
-      <arg name="node_name" value="orca_node_6"/>
+      <arg name="node_name" value="orca_node_ugv_6"/>
       <arg name="neighborDist" value="$(arg neighborDist)"/>
       <arg name="timeHorizon" value="$(arg timeHorizon)"/>
       <arg name="timeHorizonObst" value="$(arg timeHorizonObst)"/>

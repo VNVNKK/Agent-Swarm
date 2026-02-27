@@ -121,9 +121,9 @@ std::vector<Offset2D> RingPolicy::generateOffsets(int n) const
 // ========== Line —— 一字横队 ==========
 //
 //  follower 交替分布在 leader 左右，垂直于朝向方向。
-//  编号 0 在右侧 y=+1，编号 1 在左侧 y=-1，编号 2 在 y=+2 ……
+//  编号 0 在左侧 y=+1，编号 1 在右侧 y=-1，编号 2 在 y=+2 ……
 //
-//   3  1  L  0  2
+//   2  0  L  1  3
 //
 std::vector<Offset2D> LinePolicy::generateOffsets(int n) const
 {

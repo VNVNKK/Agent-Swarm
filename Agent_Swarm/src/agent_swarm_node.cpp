@@ -138,10 +138,6 @@ void AgentSwarmNode::onFormationCmd(const sunray_msgs::Formation::ConstPtr &msg)
     // 更新状态机
     state_machine_.onFormationCmd(*msg);
     auto set_home_from_state = [this]() -> bool {
-        if (agent_type_ != 0)
-        {
-            return false;
-        }
         if (uav_state_ready_)
         {
             home_pose_.position.x = uav_state_.position[0];
@@ -151,9 +147,25 @@ void AgentSwarmNode::onFormationCmd(const sunray_msgs::Formation::ConstPtr &msg)
             home_set_ = true;
             return true;
         }
+        const auto &all_states = state_cache_.states();
+        auto self_it = all_states.find(agent_id_);
+        if (self_it != all_states.end())
+        {
+            home_pose_ = self_it->second.pose.pose;
+            if (agent_type_ != 0)
+            {
+                home_pose_.position.z = 0.0;
+            }
+            home_set_ = true;
+            return true;
+        }
         if (last_goal_valid_)
         {
             home_pose_ = last_goal_;
+            if (agent_type_ != 0)
+            {
+                home_pose_.position.z = 0.0;
+            }
             home_set_ = true;
             return true;
         }
@@ -181,12 +193,13 @@ void AgentSwarmNode::onFormationCmd(const sunray_msgs::Formation::ConstPtr &msg)
     if (msg->cmd == sunray_msgs::Formation::FORMATION)
     {
         formation_change_active_ = true;        // 失效旧目标，防止 controlTimerCb 用旧 ARRIVED 提前切 HOVER
-        last_goal_valid_ = false;    }
+        last_goal_valid_ = false;    
+    }
     if (msg->cmd == sunray_msgs::Formation::SET_HOME)
     {
         if (!set_home_from_state())
         {
-            ROS_WARN("SET_HOME ignored: no UAV state yet.");
+            ROS_WARN("SET_HOME ignored: no state/goal available yet.");
         }
         else
         {
@@ -197,11 +210,23 @@ void AgentSwarmNode::onFormationCmd(const sunray_msgs::Formation::ConstPtr &msg)
     }
     if (msg->cmd == sunray_msgs::Formation::RETURN_HOME)
     {
-        if (!home_set_ && !set_home_from_uav_home())
+        if (!home_set_)
         {
-            ROS_WARN("RETURN_HOME ignored: home not set.");
-            state_machine_.setRequestedState(SwarmState::HOVER);
-            return;
+            bool home_ready = false;
+            if (agent_type_ == 0)
+            {
+                home_ready = set_home_from_uav_home();
+            }
+            if (!home_ready)
+            {
+                home_ready = set_home_from_state();
+            }
+            if (!home_ready)
+            {
+                ROS_WARN("RETURN_HOME ignored: home not set.");
+                state_machine_.setRequestedState(SwarmState::HOVER);
+                return;
+            }
         }
         return_home_active_ = true;
         last_goal_valid_ = false;
@@ -521,7 +546,7 @@ void AgentSwarmNode::handleTakeoff()
     if (time_diff >= 15.0 && uav_state_ready_ && uav_state_.armed)
     {
         takeoff_active_ = false;
-        state_machine_.setRequestedState(SwarmState::FORMATION);
+        state_machine_.setRequestedState(SwarmState::HOVER);
     }
 }
 

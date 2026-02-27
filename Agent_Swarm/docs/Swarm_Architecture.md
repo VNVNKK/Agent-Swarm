@@ -8,7 +8,7 @@ Swarm 架构（基于 Leader 的编队策略系统）
 
 核心原则
 --------
-- 所有 ID 从 **1** 开始（1-based），默认 `agent_id=1` 为 Leader。
+- 所有 ID 从 **1** 开始（1-based），Leader 由 `leader_id` 参数指定（`agent_swarm.launch` 默认 `leader_id=1`，`swarm_sim.launch` 默认 `leader_id=6`）。
 - 编队通过"二维偏移量表"定义，`OffsetBasedPolicy` 将偏移转换为目标点。
 - ORCA 只负责避障与速度输出，编队逻辑与避障解耦。
 - 阵型变换/移动到位后自动进入 HOVER。
@@ -22,7 +22,7 @@ Swarm 架构（基于 Leader 的编队策略系统）
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                          外部输入（操控）                            │
-│  formation_switch -> /sunray/formation_cmd  (ring/line/column/v/...) │
+│  formation_switch/tui -> /sunray/formation_cmd  (ring/line/column/v/...) │
 │                     /sunray/leader_goal     (leader 目标点)         │
 └─────────────────────────────────────────────────────────────────────┘
                                 │
@@ -36,7 +36,8 @@ Swarm 架构（基于 Leader 的编队策略系统）
 │  │      goalTimerCb       @ goal_rate Hz (编队目标计算)          │   │
 │  │      controlTimerCb    @ control_rate Hz (控制指令输出)       │   │
 │  │      statePublishTimerCb @ state_pub_rate Hz (状态发布)       │   │
-│  │  - 订阅: formation_cmd, leader_goal, uav_state, orca_cmd     │   │
+│  │  - 订阅: formation_cmd(/ground), formation_offsets,           │   │
+│  │         leader_goal, uav_state（orca_cmd 由 OrcaClient 订阅） │   │
 │  │  - 发布: orca/agent_state, orca/setup, uav_control_cmd       │   │
 │  └──────────────────────────────────────────────────────────────┘   │
 │        │            │             │             │                    │
@@ -113,10 +114,10 @@ Swarm 架构（基于 Leader 的编队策略系统）
 
 | 参数 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
-| `agent_id` | int | 1 | 本机 ID（1-based），1 为 Leader |
+| `agent_id` | int | 1 | 本机 ID（1-based），是否 Leader 由 `leader_id` 决定 |
 | `agent_num` | int | 1 | 集群总数 |
 | `agent_type` | int | 0 | 类型: 0=UAV, 1=UGV |
-| `leader_id` | int | 1 | Leader 的 ID；>100 表示 UGV Leader，实际 ID = leader_id-100 |
+| `leader_id` | int | 1 | Leader 的 ID（在 `agent_swarm.launch` 默认 1；`swarm_sim.launch` 默认 6）；>100 表示 UGV Leader，实际 ID = leader_id-100 |
 | `agent_name` | string | "uav" | 话题前缀名（拼接为 `/{agent_name}{id}/...`） |
 | `formation_policy` | string | "ring" | 初始编队策略名 |
 | `spacing` | double | 1.0 | 编队相邻间距(m) |
@@ -193,8 +194,7 @@ Swarm 架构（基于 Leader 的编队策略系统）
 - 保存/加载文件路径：
   - 按 `S`/`L` 后输入的路径会原样使用
   - 直接回车时默认文件名为 `custom_formation.txt`
-  - 默认文件保存到 **formation_tui 进程的当前工作目录**
-    - 如果是 `roslaunch` 启动且未设置 `cwd`，通常为 `ROS_HOME`（常见是 `~/.ros`）
+  - 默认文件保存到 **formation_tui 进程的当前工作目录**（具体路径取决于启动环境）
   - 需要固定位置时，请在提示中输入**绝对路径**（例如 `/home/xx/formation/custom_formation.txt`）
 
 ### 2 AgentSwarmNode 主循环
@@ -295,7 +295,7 @@ statePublishTimerCb() @ state_pub_rate Hz:
 0s ~ 5s:   phase 1  切换飞控到 CMD_CONTROL 模式（发布 UAVSetup，已是 CMD_CONTROL 时跳过）
 5s ~ 10s:  phase 2  解锁（发布 UAVSetup ARM，需 CMD_CONTROL 且未解锁时才发送）
 10s ~ 15s: phase 3  发送起飞指令 publishTakeoff(fixed_altitude_)，携带目标高度（需已解锁）
-15s+:      phase 4  起飞流程结束，切回 FORMATION 状态（需 uav_state_ready_ 且 armed）
+15s+:      phase 4  起飞流程结束，切回 HOVER 状态（需 uav_state_ready_ 且 armed），等待外部发送 FORMATION 指令进入编队
 ```
 
 注意：`publishTakeoff(altitude)` 在 `UAVControlCMD::Takeoff` 指令中设置 `desired_pos[2] = altitude`，
@@ -462,6 +462,11 @@ ORCA 层作为独立节点运行，每个 agent 一个实例。`orca_node.cpp` �
                     └────┬─────┘
                          │ 15s后
                          ▼
+                    ┌──────────┐
+                    │  HOVER   │ ◄─── 起飞完成后在此等待
+                    └────┬─────┘
+                         │ FORMATION cmd
+                         ▼
     ┌──────────┐ ◄──── FORMATION cmd (从任意状态)
  ┌──│FORMATION │──┐
  │  └────┬─────┘  │
@@ -478,7 +483,7 @@ ORCA 层作为独立节点运行，每个 agent 一个实例。`orca_node.cpp` �
     │   LAND   │  │ORCA_RETURN_H │
     └──────────┘  └──────────────┘
 
-  正常流程: INIT → TAKEOFF → FORMATION → HOVER (到位) → ...
+  正常流程: INIT → TAKEOFF → HOVER → (FORMATION cmd) → FORMATION → HOVER (到位) → ...
   注: LAND 和 RETURN_HOME 可从任意状态进入（RETURN_HOME 走 ORCA）
   注: effectiveState() 安全兜底——INIT 直接返回不做任何操作，
       leader/orca 超时时 FORMATION→HOVER，orca 超时时 ORCA_RETURN_HOME→HOVER
@@ -545,7 +550,7 @@ Launch 配置说明
 <launch>
   <arg name="agent_num" default="1"/>
   <arg name="agent_type" default="0"/>   <!-- 0=UAV, 1=UGV -->
-  <arg name="leader_id" default="1"/>
+  <arg name="leader_id" default="6"/>
   <arg name="agent_name" default="uav"/>
   <arg name="formation_policy" default="ring"/>
   <arg name="spacing" default="2.5"/>
@@ -558,7 +563,7 @@ Launch 配置说明
   <arg name="goal_z_tolerance" default="0.2"/>
   <arg name="leader_publish_goal" default="true"/>
   <!-- ORCA 参数 -->
-  <arg name="neighborDist" default="1.5"/>
+  <arg name="neighborDist" default="3.0"/>
   <arg name="maxSpeed" default="2.0"/>
   ...
 
@@ -606,13 +611,13 @@ Launch 配置说明
 
 ```bash
 cd ~/catkin_ws
-catkin_make --pkg swarm
+catkin_make --pkg sunray_swarm
 # 或
-catkin build swarm
+catkin build sunray_swarm
 ```
 
 依赖：
-- `roscpp`, `std_msgs`, `geometry_msgs`, `nav_msgs`, `visualization_msgs`, `tf`
+- `roscpp`, `std_msgs`, `geometry_msgs`, `nav_msgs`, `sensor_msgs`, `visualization_msgs`, `tf`, `tf2`, `tf2_geometry_msgs`
 - `sunray_msgs`（自定义消息包：Formation, FormationOffsets, OrcaSetup, OrcaCmd, UAVState, UGVState, UAVControlCMD, UGVControlCMD, UAVSetup）
 - `ncurses`（formation_tui 依赖）
 
@@ -630,7 +635,7 @@ catkin build swarm
 | [`formation_policies.h/cpp`](Agent_Swarm/src/formation_policies.cpp) | Ring/Line/Column/V-Shape/Wedge/Custom 的偏移表生成与通用目标计算 |
 | [`formation_policy_factory.h/cpp`](Agent_Swarm/src/formation_policy_factory.cpp) | 策略工厂，注册 `ring/line/column/v_shape/v/wedge/custom` |
 | [`agent_state_cache.h/cpp`](Agent_Swarm/src/agent_state_cache.cpp) | 全部 agent 状态缓存与 `/orca/agent_state` Odometry 发布 |
-| [`goal_dispatcher.h/cpp`](Agent_Swarm/src/goal_dispatcher.cpp) | 编队目标 → OrcaSetup 封装与发布（简单 publish，无防抖） |
+| [`goal_dispatcher.h/cpp`](Agent_Swarm/src/goal_dispatcher.cpp) | 编队目标 → OrcaSetup 封装与发布 |
 | [`orca_client.h/cpp`](Agent_Swarm/src/orca_client.cpp) | 订阅 `/orca_cmd`，缓存 ORCA 避障输出 |
 | [`control_command_mapper.h/cpp`](Agent_Swarm/src/control_command_mapper.cpp) | ORCA 速度输出 → UAVControlCMD/UGVControlCMD 映射（含三种模式：RUN/ARRIVED/STOP） |
 | [`formation_switch.cpp`](Agent_Swarm/utils/formation_switch.cpp) | 命令行交互控制工具（可执行文件名 `uav_command_pub`，读取整数指令） |
