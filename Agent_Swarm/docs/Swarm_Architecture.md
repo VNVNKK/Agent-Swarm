@@ -8,7 +8,7 @@ Swarm 架构（基于 Leader 的编队策略系统）
 
 核心原则
 --------
-- 所有 ID 从 **1** 开始（1-based），Leader 由 `leader_id` 参数指定（`agent_swarm.launch` 默认 `leader_id=1`，`swarm_sim.launch` 默认 `leader_id=6`）。
+- 所有 ID 从 **1** 开始（1-based），Leader 由 `leader_id` 参数指定（`agent_swarm.launch` 默认 `leader_id=1`，`swarm_sim.launch` 默认 `leader_id=1`）。
 - 编队通过"二维偏移量表"定义，`OffsetBasedPolicy` 将偏移转换为目标点。
 - ORCA 只负责避障与速度输出，编队逻辑与避障解耦。
 - 阵型变换/移动到位后自动进入 HOVER。
@@ -27,56 +27,56 @@ Swarm 架构（基于 Leader 的编队策略系统）
 └─────────────────────────────────────────────────────────────────────┘
                                 │
                                 ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                        Agent_Swarm 控制层                            │
-│                                                                     │
-│  ┌──────────────────────────────────────────────────────────────┐   │
-│  │              AgentSwarmNode (节点入口与调度)                    │   │
-│  │  - 三个独立定时器:                                            │   │
-│  │      goalTimerCb       @ goal_rate Hz (编队目标计算)          │   │
-│  │      controlTimerCb    @ control_rate Hz (控制指令输出)       │   │
-│  │      statePublishTimerCb @ state_pub_rate Hz (状态发布)       │   │
-│  │  - 订阅: formation_cmd(/ground), formation_offsets,           │   │
-│  │         leader_goal, uav_state（orca_cmd 由 OrcaClient 订阅） │   │
-│  │  - 发布: orca/agent_state, orca/setup, uav_control_cmd       │   │
+┌────────────────────────────────────────────────────────────────────────────┐
+│                        Agent_Swarm 控制层                                   │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │              AgentSwarmNode (节点入口与调度)                           │   │
+│  │  - 三个独立定时器:                                                     │   │
+│  │      goalTimerCb       @ goal_rate Hz (编队目标计算)                   │   │
+│  │      controlTimerCb    @ control_rate Hz (控制指令输出)                │   │
+│  │      statePublishTimerCb @ state_pub_rate Hz (状态发布)                │   │
+│  │  - 订阅: formation_cmd(/ground), formation_offsets,                    │   │
+│  │         leader_goal, uav_state（orca_cmd 由 OrcaClient 订阅）           │   │
+│  │  - 发布: orca/agent_state, orca/setup, uav_control_cmd，ugv_control_cmd │   │
 │  └──────────────────────────────────────────────────────────────┘   │
 │        │            │             │             │                    │
 │        ▼            ▼             ▼             ▼                    │
-│ ┌────────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────────────┐  │
-│ │ Leader     │ │Formation │ │Formation │ │ AgentStateCache      │  │
-│ │ Tracker    │ │StateMach.│ │ Context  │ │ (全机状态缓存+发布)   │  │
-│ └────────────┘ └──────────┘ │(数据结构)│ └──────────────────────┘  │
-│        │            │       └──────────┘          │                 │
+│ ┌────────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────────────┐    │
+│ │ Leader     │ │Formation │ │Formation │ │ AgentStateCache      │    │
+│ │ Tracker    │ │StateMach.│ │ Context  │ │ (全机状态缓存+发布)   │     │
+│ └────────────┘ └──────────┘ │(数据结构)│ └──────────────────────┘     │
+│        │            │       └──────────┘          │                  │
 │        │            │            │                 ▼                 │
-│        │            │            ▼        /uavX/orca/agent_state    │
-│        │            │  ┌──────────────┐                             │
-│        │            │  │FormationPoli-│                             │
-│        │            │  │cyFactory     │                             │
-│        │            │  └──────┬───────┘                             │
-│        │            │         ▼                                     │
-│        │            │  ┌──────────────┐                             │
-│        │            │  │FormationPolicy│                            │
-│        │            │  │(Ring/Line/   │                             │
-│        │            │  │ Column/V/W) │                             │
-│        │            │  └──────┬───────┘                             │
-│        │            │         ▼                                     │
-│        │            │  ┌──────────────┐   ┌──────────────────────┐  │
+│        │            │            ▼        /uavX/orca/agent_state     │
+│        │            │  ┌──────────────┐                              │
+│        │            │  │FormationPoli-│                              │
+│        │            │  │cyFactory     │                              │
+│        │            │  └──────┬───────┘                              │
+│        │            │         ▼                                      │
+│        │            │  ┌──────────────┐                              │
+│        │            │  │FormationPolicy│                             │
+│        │            │  │(Ring/Line/   │                              │
+│        │            │  │ Column/V/W) │                               │
+│        │            │  └──────┬───────┘                              │
+│        │            │         ▼                                      │
+│        │            │  ┌──────────────┐   ┌──────────────────────┐   │
 │        │            │  │GoalDispatcher│──▶│ /uavX/orca/setup     │  │
-│        │            │  └──────────────┘   └──────────────────────┘  │
-│        │            │                              │                │
-│        │            │                              ▼                │
-│        │            │                     ┌──────────────────────┐  │
-│        │            │                     │ OrcaClient           │  │
-│        │            │                     │ (订阅 /uavX/orca_cmd)│  │
-│        │            │                     └──────────┬───────────┘  │
-│        │            │                                │              │
-│        │            │                                ▼              │
-│        │            │                     ┌──────────────────────┐  │
-│        │            │                     │ ControlCommandMapper │  │
-│        │            │                     │ /uavX/uav_control_cmd│  │
-│        │            │                     └──────────────────────┘  │
-│        │            │                                               │
-└────────┼────────────┼───────────────────────────────────────────────┘
+│        │            │  └──────────────┘   └──────────────────────┘   │
+│        │            │                              │                 │
+│        │            │                              ▼                 │
+│        │            │                     ┌──────────────────────┐   │
+│        │            │                     │ OrcaClient           │   │
+│        │            │                     │ (订阅 /uavX/orca_cmd)│   │
+│        │            │                     └──────────┬───────────┘   │
+│        │            │                                │               │
+│        │            │                                ▼               │
+│        │            │                     ┌──────────────────────┐   │
+│        │            │                     │ ControlCommandMapper │   │
+│        │            │                     │ /uavX/uav_control_cmd│   │
+│        │            │                     └──────────────────────┘   │
+│        │            │                                                │
+└────────┼────────────┼────────────────────────────────────────────────┘
          │            │
          ▼            ▼
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -117,7 +117,7 @@ Swarm 架构（基于 Leader 的编队策略系统）
 | `agent_id` | int | 1 | 本机 ID（1-based），是否 Leader 由 `leader_id` 决定 |
 | `agent_num` | int | 1 | 集群总数 |
 | `agent_type` | int | 0 | 类型: 0=UAV, 1=UGV |
-| `leader_id` | int | 1 | Leader 的 ID（在 `agent_swarm.launch` 默认 1；`swarm_sim.launch` 默认 6）；>100 表示 UGV Leader，实际 ID = leader_id-100 |
+| `leader_id` | int | 1 | Leader 的 ID（在 `agent_swarm.launch` 默认 1；`swarm_sim.launch` 默认 1）；>100 表示 UGV Leader，实际 ID = leader_id-100 |
 | `agent_name` | string | "uav" | 话题前缀名（拼接为 `/{agent_name}{id}/...`） |
 | `formation_policy` | string | "ring" | 初始编队策略名 |
 | `spacing` | double | 1.0 | 编队相邻间距(m) |
@@ -166,7 +166,7 @@ Swarm 架构（基于 Leader 的编队策略系统）
 
 外部通过 `formation_switch` 工具或其他节点发送：
 - `/sunray/formation_cmd` (`sunray_msgs::Formation`)：
-  - `cmd` 字段: `FORMATION`(=1), `HOVER`(=2), `TAKEOFF`(=5), `LAND`(=6), `RETURN_HOME`(=7), `SET_HOME`(=8)
+  - `cmd` 字段: `TAKEOFF`(=1), `LAND`(=2), `HOVER`(=3), `FORMATION`(=4), `SET_HOME`(=5), `RETURN_HOME`(=6)
   - `name` 字段: `"ring"`, `"line"`, `"column"`, `"v_shape"`, `"wedge"`, `"expand"`, `"contract"`, `"custom"`
 - `/sunray/formation_offsets` (`sunray_msgs::FormationOffsets`)：
   - `offsets` 数组：自定义阵型偏移量（leader 体坐标系，spacing=1 时的归一化偏移）
@@ -350,7 +350,7 @@ computeTarget(leader_pose, ctx, target_pose) → bool
 
 ### 7 ORCA 避障
 
-ORCA 层作为独立节点运行，每个 agent 一个实例。`orca_node.cpp` 的 main 函数中直接初始化 OrcaEngine 和 OrcaIO，然后在 `ros::Rate(20.0)` 循环中调用 `engine.step()` 和 `io.publishCmd()`（无独立 OrcaNode 类，`orca_node.h` 为占位头文件）：
+ORCA 层作为独立节点运行，每个 agent 一个实例。`orca_node.cpp` 的 main 函数中直接初始化 OrcaEngine 和 OrcaIO，然后在 `ros::Rate(20.0)` 循环中调用 `engine.step()`、`io.publishCmd()` 与 `io.publishFenceMarkers()`（无独立 OrcaNode 类，`orca_node.h` 为占位头文件）：
 
 [`OrcaIO`](ORCA/include/orca_io.h) → [`OrcaEngine`](ORCA/include/orca_engine.h) → [`RVOSimulator`](ORCA/include/RVOSimulator.h)
 
@@ -377,7 +377,7 @@ ORCA 层作为独立节点运行，每个 agent 一个实例。`orca_node.cpp` �
 - `angular[3]`: 角速度 (x, y, z)
 - `goal_pos[3]`: 目标位置
 - `goal_yaw`: 目标航向
-- `state`: 状态码 —— `INIT`(=0) 初始化, `RUN`(=1) 正在移动, `ARRIVED`(=2) 已到达目标, `STOP`(=3) 停止
+- `state`: 状态码 —— `INIT`(=0) 初始化, `RUN`(=1) 正在移动, `STOP`(=2) 停止, `ARRIVED`(=3) 已到达目标
 
 **ObstacleBuilder** 构建虚拟围栏：
 - 围栏始终构建（无 `fence_enabled` 开关）
@@ -397,9 +397,9 @@ ORCA 层作为独立节点运行，每个 agent 一个实例。`orca_node.cpp` �
 - UAV 发布话题: `/{agent_name}{id}/sunray/uav_control_cmd` (`sunray_msgs::UAVControlCMD`)
 - UGV 发布话题: `/{agent_name}{id}/sunray_ugv/ugv_control_cmd` (`sunray_msgs::UGVControlCMD`)
 - **三种映射模式**（根据 OrcaCmd.state）：
-  - `RUN` → `XyVelZPosYaw`（速度+位置混合控制）
-  - `ARRIVED` → `XyzPosYaw`（纯位置控制，锁定目标点）
-  - `STOP`/其它 → `Hover`
+  - `RUN` → UAV:`XyVelZPosYaw`；UGV:`VEL_CONTROL_ENU`
+  - `ARRIVED` → UAV:`XyzPosYaw`；UGV:`POS_CONTROL_ENU`
+  - `STOP`/其它 → UAV:`Hover`；UGV:`HOLD`
 - **特殊指令**：
   - `publishTakeoff(altitude)`: 起飞指令（仅 UAV），`altitude` 参数设置 `desired_pos[2]` 确保起飞到指定高度
   - `publishLand()`: 降落指令（仅 UAV）
@@ -426,7 +426,7 @@ ORCA 层作为独立节点运行，每个 agent 一个实例。`orca_node.cpp` �
 | `/sunray/formation_offsets` | ext→Agent | `sunray_msgs/FormationOffsets` | formation_tui | AgentSwarmNode | 自定义阵型偏移量 |
 | `/sunray/leader_goal` | ext→Agent | `geometry_msgs/PoseStamped` | formation_switch / formation_tui | AgentSwarmNode | Leader 目标点 |
 | `/{name}{id}/sunray/uav_state` | ext→Agent | `sunray_msgs/UAVState` | 飞控/仿真 | AgentStateCache, LeaderTracker, AgentSwarmNode | 无人机状态 |
-| `/{name}{id}/sunray_ugv/ugv_state` | ext→Agent | `sunray_msgs/UGVState` | 车控/仿真 | AgentStateCache, LeaderTracker | 无人车状态 |
+| `/{name}{id}/sunray_ugv/ugv_state` | ext→Agent | `sunray_msgs/UGVState` | 车控/仿真 | AgentStateCache, LeaderTracker（仅常规前缀场景） | 无人车状态 |
 | `/{name}{id}/sunray/setup` | Agent→飞控 | `sunray_msgs/UAVSetup` | AgentSwarmNode | 飞控/仿真 | UAV 模式切换（起飞流程使用） |
 | `/{name}{id}/orca/agent_state` | Agent→ORCA | `nav_msgs/Odometry` | AgentStateCache | OrcaIO | 全部 agent 状态→ORCA |
 | `/{name}{id}/orca/setup` | Agent→ORCA | `sunray_msgs/OrcaSetup` | GoalDispatcher | OrcaIO | 目标点与运行模式 |
@@ -437,6 +437,7 @@ ORCA 层作为独立节点运行，每个 agent 一个实例。`orca_node.cpp` �
 | `/{name}{id}/orca/geo_fence` | ORCA→RViz | `visualization_msgs/MarkerArray` | OrcaIO | RViz | 围栏可视化 |
 
 注：`{name}` = `agent_name` 参数值（默认 `uav`），`{id}` = `agent_id`（1-based）。例如 `/uav1/orca_cmd`。
+例外：LeaderTracker 对 Leader 状态订阅始终使用硬编码前缀：`leader_id<=100` 时为 `/uav{leader_id}/sunray/uav_state`，`leader_id>100` 时为 `/ugv{leader_id-100}/sunray_ugv/ugv_state`；不跟随 `agent_name`。
 
 动作指令（形成编队的方式）
 ------------------------
@@ -550,7 +551,7 @@ Launch 配置说明
 <launch>
   <arg name="agent_num" default="1"/>
   <arg name="agent_type" default="0"/>   <!-- 0=UAV, 1=UGV -->
-  <arg name="leader_id" default="6"/>
+  <arg name="leader_id" default="1"/>
   <arg name="agent_name" default="uav"/>
   <arg name="formation_policy" default="ring"/>
   <arg name="spacing" default="2.5"/>
